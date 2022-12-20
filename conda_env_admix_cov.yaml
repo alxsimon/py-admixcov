@@ -7,8 +7,6 @@ dependencies:
   - python=3.10
   - sgkit
   - tskit
-  - numpy
   - matplotlib
   - seaborn
-  - pytest
   - black
