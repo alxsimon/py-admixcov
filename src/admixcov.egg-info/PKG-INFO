@@ -1,0 +1,15 @@
+Metadata-Version: 2.1
+Name: admixcov
+Version: 0.0.1
+Summary: Functions for the variance decomposition project
+Home-page: ''
+Author: Alexis Simon
+Author-email: alexis.simon@normalesup.org
+Project-URL: Bug Tracker, ''
+Classifier: Development Status :: 1 - Planning
+Classifier: Programming Language :: Python :: 3
+Classifier: License :: OSI Approved :: MIT License
+Classifier: Operating System :: OS Independent
+Classifier: Topic :: Scientific/Engineering :: Bio-Informatics
+Requires-Python: >=3.8
+Description-Content-Type: text/markdown

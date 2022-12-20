@@ -1,0 +1,14 @@
+name: admixcov
+channels:
+  - defaults
+  - bioconda
+  - conda-forge
+dependencies:
+  - python>=3.10
+  - black
+  - numpy
+  - matplotlib
+  - seaborn
+  - sgkit=0.5.0
+  - tskit=0.5.3
+  - pytest

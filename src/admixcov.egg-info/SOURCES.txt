@@ -1,0 +1,11 @@
+pyproject.toml
+setup.cfg
+src/admixcov/__init__.py
+src/admixcov/covariances.py
+src/admixcov/plotting.py
+src/admixcov/sgkit.py
+src/admixcov/treesequences.py
+src/admixcov.egg-info/PKG-INFO
+src/admixcov.egg-info/SOURCES.txt
+src/admixcov.egg-info/dependency_links.txt
+src/admixcov.egg-info/top_level.txt
