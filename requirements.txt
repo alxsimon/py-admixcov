@@ -1,0 +1,7 @@
+python>=3.10
+sgkit=0.5.0
+tskit=0.5.3
+matplotlib
+seaborn
+black
+ipykernel
