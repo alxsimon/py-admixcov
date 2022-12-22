@@ -10,10 +10,14 @@ def plot_covmats(
     main_title=None,
     delta_labels=None,
     scales=None,
+    mask_diag=False,
 ):
     N = len(list_covmat)
     N_delta = list_covmat[0].shape[0]
-    mask_covmat = np.arange(N_delta)[:, None] > np.arange(N_delta)
+    if mask_diag:
+        mask_covmat = np.arange(N_delta)[:, None] >= np.arange(N_delta)
+    else:
+        mask_covmat = np.arange(N_delta)[:, None] > np.arange(N_delta)
 
     if delta_labels is None:
         delta_labels = [f"$\\Delta_{{{x}}}$" for x in range(N_delta)]
