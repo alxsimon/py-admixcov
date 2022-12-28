@@ -31,27 +31,33 @@ def nodes_at(ts, time, population):
     return res_nodes
 
 
-def draw_sample_sets(
+def draw_sample_set_at(
     ts: tskit.TreeSequence,
-    times: list,
+    time: int,
     rng,
-    pop,
+    pop: int,
     n_sample,
 ):
     nodes = ts.tables.nodes
-    all_samples = [
-        (nodes.population == pop) & (nodes.time == t) & (nodes.flags == 1)
-        for t in times
-    ]
-    ind_id = [np.unique(nodes[s].individual) for s in all_samples]
+    all_samples = (nodes.population == pop) & (nodes.time == time) & (nodes.flags == 1)
+    ind_id = np.unique(nodes[all_samples].individual)
     # take only n_sample inds
     # take both nodes of each ind
-    sample_sets = [
-        np.where(
-            s & np.isin(nodes.individual, rng.choice(id, size=n_sample, replace=False))
-        )[0]
-        for s, id in zip(all_samples, ind_id)
-    ]
+    sample_set = np.where(
+        all_samples
+        & np.isin(nodes.individual, rng.choice(ind_id, size=n_sample, replace=False))
+    )[0]
+    return sample_set
+
+
+def draw_sample_sets(
+    ts: tskit.TreeSequence,
+    times: list[int],
+    rng,
+    pop: int,
+    n_sample,
+):
+    sample_sets = [draw_sample_set_at(ts, t, rng, pop, n_sample) for t in times]
     return sample_sets
 
 
