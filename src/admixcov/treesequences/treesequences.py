@@ -10,6 +10,27 @@ def get_times(ts: tskit.TreeSequence):
     return np.unique(individual_times)
 
 
+def individuals_at(ts, time, population):
+    has_indiv = ts.tables.nodes.individual >= 0
+    which_indiv = ts.tables.nodes.individual[has_indiv]
+    individual_times = np.zeros(ts.num_individuals)
+    individual_times[which_indiv] = ts.tables.nodes.time[has_indiv]
+    individual_populations = np.repeat(np.int32(-1), ts.num_individuals)
+    individual_populations[which_indiv] = ts.tables.nodes.population[has_indiv]
+    res_inds = np.where(
+        (individual_times == time) & (individual_populations == population)
+    )[0]
+    return res_inds
+
+
+def nodes_at(ts, time, population):
+    is_sample = ts.tables.nodes.flags == 1
+    at_time = ts.tables.nodes.time == time
+    in_pop = ts.tables.nodes.population == population
+    res_nodes = np.where(is_sample & at_time & in_pop)[0]
+    return res_nodes
+
+
 def draw_sample_sets(
     ts: tskit.TreeSequence,
     times: list,
