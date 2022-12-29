@@ -1,5 +1,6 @@
 import tskit
 import numpy as np
+from numpy.typing import NDArray
 
 
 def get_times(ts: tskit.TreeSequence):
@@ -41,12 +42,12 @@ def draw_sample_set_at(
     nodes = ts.tables.nodes
     all_samples = (nodes.population == pop) & (nodes.time == time) & (nodes.flags == 1)
     ind_id = np.unique(nodes[all_samples].individual)
-    # take only n_sample inds
-    # take both nodes of each ind
     sample_set = np.where(
         all_samples
         & np.isin(nodes.individual, rng.choice(ind_id, size=n_sample, replace=False))
     )[0]
+    # take only n_sample inds
+    # take both nodes of each ind
     return sample_set
 
 
@@ -94,15 +95,21 @@ def get_allele_frequencies(
 def get_genotype_matrix_pseudohap(
     ts: tskit.TreeSequence,
     rng,
-    samples=None,
-    flip=None,
+    samples: None|NDArray|list[NDArray]=None,
+    flip: None|NDArray[np.bool_]=None, # wether to flip the allele
 ):
-    # this function assumes sample nodes of a same individual are adjacent.
+    # this function assumes sample nodes of an individual are adjacent.
+    NEEDSPLIT = False
     if samples is None:
         N_samples = int(ts.num_samples / 2)
         samples = ts.samples()
-    else:
+    elif isinstance(samples, np.ndarray):
         N_samples = int(len(samples) / 2)
+    else:
+        NEEDSPLIT = True
+        sizes = [int(len(s) / 2) for s in samples]
+        splits = np.cumsum(sizes)[:-1]
+        N_samples = sum(sizes)
     if flip is None:
         flip = np.zeros(ts.num_sites, dtype=bool)
     base_indices = np.array(range(0, N_samples * 2, 2))
@@ -112,7 +119,11 @@ def get_genotype_matrix_pseudohap(
         ret[i] = v.genotypes[indices]
         if flip[i]:
             ret[i] = 1 - ret[i]
-    return ret
+    if NEEDSPLIT:
+        split_ret = np.split(ret, splits, axis=1)
+        return split_ret
+    else:
+        return ret
 
 
 def get_admixture_proportions(
