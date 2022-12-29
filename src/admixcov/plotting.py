@@ -35,9 +35,9 @@ def plot_covmats(
             cmap="vlag",
             vmin=-scale_max,
             vmax=scale_max,
-            xticklabels=delta_labels, # type: ignore
-            yticklabels=delta_labels, # type: ignore
-            linewidths=0.5, # type: ignore
+            xticklabels=delta_labels,  # type: ignore
+            yticklabels=delta_labels,  # type: ignore
+            linewidths=0.5,  # type: ignore
             ax=axs[i],
         )
         if list_titles is not None:
