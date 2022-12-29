@@ -95,22 +95,11 @@ def get_allele_frequencies(
 def get_genotype_matrix_pseudohap(
     ts: tskit.TreeSequence,
     rng,
-    samples: None|NDArray|list[NDArray]=None,
+    N_samples: int,
+    samples: NDArray,
     flip: None|NDArray[np.bool_]=None, # wether to flip the allele
 ):
     # this function assumes sample nodes of an individual are adjacent.
-    NEEDSPLIT = False
-    if samples is None:
-        N_samples = int(ts.num_samples / 2)
-        samples = ts.samples()
-    elif isinstance(samples, np.ndarray):
-        N_samples = int(samples.size / 2)
-    elif isinstance(samples, list):
-        NEEDSPLIT = True
-        sizes = [int(len(s) / 2) for s in samples]
-        splits = np.cumsum(sizes)[:-1]
-        samples = np.concatenate(samples)
-        N_samples = int(samples.size / 2)
     if flip is None:
         flip = np.zeros(ts.num_sites, dtype=bool)
     base_indices = np.array(range(0, N_samples * 2, 2))
@@ -120,11 +109,61 @@ def get_genotype_matrix_pseudohap(
         ret[i] = v.genotypes[indices]
         if flip[i]:
             ret[i] = 1 - ret[i]
-    if NEEDSPLIT:
-        split_ret = np.split(ret, splits, axis=1)
-        return split_ret
-    else:
-        return ret
+    return ret
+
+
+def get_pseudohap_genotypes(
+    ts: tskit.TreeSequence,
+    rng,
+    samples: None|NDArray|list[NDArray]|tuple[list[NDArray]]=None,
+    flip: None|NDArray[np.bool_]=None, # wether to flip the allele
+):
+    # Deal with different ways of passing the samples
+    if samples is None:
+        N_samples = int(ts.num_samples / 2)
+        passed_samples = ts.samples()
+        gen = get_genotype_matrix_pseudohap(
+            ts, rng, N_samples, passed_samples, flip
+        )
+        return gen
+    elif isinstance(samples, np.ndarray):
+        N_samples = int(samples.size / 2)
+        gen = get_genotype_matrix_pseudohap(
+            ts, rng, N_samples, samples, flip
+        )
+        return gen
+    elif isinstance(samples, list):
+        sizes = [int(s.size / 2) for s in samples]
+        splits = np.cumsum(sizes)[:-1]
+        passed_samples = np.concatenate(samples)
+        N_samples = int(passed_samples.size / 2)
+        gen = np.split(
+            get_genotype_matrix_pseudohap(
+                ts, rng, N_samples, passed_samples, flip
+            ),
+            splits, axis=1,
+        )
+        return gen
+    elif isinstance(samples, tuple):
+        sizes = []
+        for group in samples:
+            sizes += [int(s.size / 2) for s in group]
+        splits = np.cumsum(sizes)[:-1]
+        passed_samples = np.concatenate([y for x in samples for y in x]) # unpack
+        N_samples = int(passed_samples.size / 2)
+        gen = np.split(
+            get_genotype_matrix_pseudohap(
+                ts, rng, N_samples, passed_samples, flip
+            ),
+            splits, axis=1,
+        )
+        # repack
+        tuple_gen = tuple()
+        counter = 0
+        for i in range(len(samples)):
+            tuple_gen += (gen[counter:(counter + len(samples[i]))],)
+            counter += len(samples[i])
+        return tuple_gen
 
 
 def get_admixture_proportions(
