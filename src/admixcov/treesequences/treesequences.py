@@ -104,12 +104,13 @@ def get_genotype_matrix_pseudohap(
         N_samples = int(ts.num_samples / 2)
         samples = ts.samples()
     elif isinstance(samples, np.ndarray):
-        N_samples = int(len(samples) / 2)
-    else:
+        N_samples = int(samples.size / 2)
+    elif isinstance(samples, list):
         NEEDSPLIT = True
         sizes = [int(len(s) / 2) for s in samples]
         splits = np.cumsum(sizes)[:-1]
-        N_samples = sum(sizes)
+        samples = np.concatenate(samples)
+        N_samples = int(samples.size / 2)
     if flip is None:
         flip = np.zeros(ts.num_sites, dtype=bool)
     base_indices = np.array(range(0, N_samples * 2, 2))
