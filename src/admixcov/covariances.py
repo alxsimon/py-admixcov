@@ -241,7 +241,8 @@ def bootstrap(
     alphas,
     N_bootstrap=5e3,
     tile_size: int = int(1e6),
-    bias=False,
+    bias=True,
+    drift_err=True,
 ):
 
     tiles = [(i, i + tile_size) for i in range(0, int(ts.sequence_length), tile_size)]
@@ -267,13 +268,16 @@ def bootstrap(
         for mask in tile_masks
     ]
 
-    tiled_drift_err = [
-        get_drift_err_matrix(
-            solve_for_variances(np.diag(c - a), alphas),
-            alphas,
-        )
-        for c, a in zip(tiled_cov, tiled_admix_cov)
-    ]
+    if drift_err:
+        tiled_drift_err = [
+            get_drift_err_matrix(
+                solve_for_variances(np.diag(c - a), alphas),
+                alphas,
+            )
+            for c, a in zip(tiled_cov, tiled_admix_cov)
+        ]
+    else:
+        tiled_drift_err = [np.zeros(tiled_cov[0].shape)] * len(tiled_cov)
 
     tiled_corr_cov = [
         c - a - d for c, a, d in zip(tiled_cov, tiled_admix_cov, tiled_drift_err)
