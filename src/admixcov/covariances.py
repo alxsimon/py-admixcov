@@ -22,21 +22,16 @@ import numpy as np
 
 def get_pseudohap_sampling_bias(
     af: np.ndarray,
-    sample_size: int|np.ndarray):
+    sample_size: np.ndarray):
     hh = af * (1 - af)
-    if isinstance(sample_size, np.ndarray):
-        # meaning there can be NaNs
-        # need to check this part
-        tmp = (sample_size - 1).astype(float)
-        tmp[tmp <= 0] = np.nan
-        sample_correction = 1 / tmp
-    else: # sample_size is single int
-        sample_correction = 1 / (sample_size - 1)
+    # in case of NaNs (sample_size 0 or 1)
+    tmp = (sample_size - 1).astype(float)
+    tmp[tmp <= 0] = np.nan
+    sample_correction = 1 / tmp
     # array shape adjustment
-    if isinstance(sample_correction, np.ndarray):
-        if sample_correction.ndim != hh.ndim:
-            if sample_correction.ndim == 1:
-                sample_correction = sample_correction[:, np.newaxis]
+    if sample_correction.ndim != hh.ndim:
+        if sample_correction.ndim == 1:
+            sample_correction = sample_correction[:, np.newaxis]
     bias = np.nanmean(hh * sample_correction, axis=1)
     return bias
 
