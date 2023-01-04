@@ -8,6 +8,7 @@ class CovData:
         self.L = int(1e5)
         self.N_times = 5
         self.rng = np.random.default_rng(seed)
+        self.sample_size_int = 20
         self.sample_size = np.array([20, 10, 50, 100, 5])
         self.sample_size_md = np.array(
             [self.rng.integers(0, ss, size=self.L) for ss in self.sample_size]
@@ -56,12 +57,18 @@ class CovData:
             ]
         )
         # need to change bias computation
+        self.bias_vector_int = np.mean(
+            (self.af * (1 - self.af)) * (1 / (self.sample_size_int - 1)),
+            axis=1,
+        )
         self.bias_vector = np.mean(
             (self.af * (1 - self.af)) * (1 / (self.sample_size - 1))[:, np.newaxis],
             axis=1,
         )
+        tmp = (self.sample_size_md - 1).astype(float)
+        tmp[tmp <= 0] = np.nan
         self.bias_vector_md = np.nanmean(
-            (1 / (self.sample_size_md - 1)) * (self.af_md * (1 - self.af_md)),
+            (self.af_md * (1 - self.af_md)) * (1 / tmp),
             axis=1,
         )
         # ======
@@ -83,11 +90,15 @@ def cov_data():
 
 def test_bias(cov_data):
     assert (
-        admixcov.get_bias_vector(cov_data.af, cov_data.sample_size)
+        admixcov.get_pseudohap_sampling_bias(cov_data.af, cov_data.sample_size_int)
+        == cov_data.bias_vector_int
+    ).all()
+    assert (
+        admixcov.get_pseudohap_sampling_bias(cov_data.af, cov_data.sample_size)
         == cov_data.bias_vector
     ).all()
     assert (
-        admixcov.get_bias_vector(cov_data.af_md, cov_data.sample_size_md)
+        admixcov.get_pseudohap_sampling_bias(cov_data.af_md, cov_data.sample_size_md)
         == cov_data.bias_vector_md
     ).all()
     assert (

@@ -20,18 +20,20 @@ import numpy as np
 # 	of shape (T - 1,).
 
 
-def get_pseudohap_sampling_bias(af, sample_size):
+def get_pseudohap_sampling_bias(
+    af: np.ndarray,
+    sample_size: int|np.ndarray):
     hh = af * (1 - af)
-    if sample_size.ndim > 1:  # meaning there can be NaNs
+    if isinstance(sample_size, np.ndarray):
+        # meaning there can be NaNs
         # need to check this part
-        tmp = sample_size - 1
-        tmp[tmp <= 0] = -99
+        tmp = (sample_size - 1).astype(float)
+        tmp[tmp <= 0] = np.nan
         sample_correction = 1 / tmp
-        sample_correction[sample_correction < 0] = np.nan
-    else:
+    else: # sample_size is single int
         sample_correction = 1 / (sample_size - 1)
     # array shape adjustment
-    if sample_correction is not int:
+    if isinstance(sample_correction, np.ndarray):
         if sample_correction.ndim != hh.ndim:
             if sample_correction.ndim == 1:
                 sample_correction = sample_correction[:, np.newaxis]
@@ -204,6 +206,30 @@ def get_drift_err_matrix(var_drift, A):
 
 
 # ================================================================
+# Summaries
+
+def get_tot_var(af: np.ndarray, sample_size):
+    b = get_pseudohap_sampling_bias(af, sample_size)
+    tot_var = np.nanvar(af[-1] - af[0]) - b[-1] - b[0]
+    return tot_var
+
+
+def get_matrix_sum(covmat: np.ndarray, k=0):
+    S = np.sum(covmat - np.triu(covmat, k=k)) # removes upper triangle
+    return S
+
+
+def get_G(covmat, af, sample_size, include_diag=False):
+    if include_diag:
+        num = get_matrix_sum(covmat, k=1)
+    else:
+        num = get_matrix_sum(covmat, k=0)
+    denom = get_tot_var(af, sample_size)
+    G = num / denom
+    return G
+
+
+# ================================================================
 # Bootstrapping
 
 
@@ -252,7 +278,7 @@ def bootstrap(
     ]
     n_loci = np.array([np.sum(tile) for tile in tile_masks])
 
-    # tiled_af = [af[:, mask] for mask in tile_masks]
+    tiled_af = [af[:, mask] for mask in tile_masks]
 
     tiled_cov = [
         get_covariance_matrix(af[:, mask], bias=bias, sample_size=n_sample)
@@ -283,16 +309,19 @@ def bootstrap(
         c - a - d for c, a, d in zip(tiled_cov, tiled_admix_cov, tiled_drift_err)
     ]
 
-    # tiled_num_G = [
-    # 	compute_num_G(cc)
-    # 	for cc in tiled_corr_cov
-    # ]
-    # tiled_tot_var = [
-    # 	compute_tot_var(a[0], a[-1], n_sample)
-    # 	for a in tiled_af
-    # ]
 
-    # tiled_num_Ap = [np.sum(ac) for ac in tiled_admix_cov]
+    tiled_num_G = [
+        get_matrix_sum(c, k=0)
+        for c in tiled_corr_cov
+    ]
+    tiled_num_Ap = [
+        get_matrix_sum(c, k=1)
+        for c in tiled_corr_cov
+    ]
+    tiled_tot_var = [
+        get_tot_var(a, n_sample)
+        for a in tiled_af
+    ]
 
     weights = n_loci / np.sum(n_loci)
     straps_cov = run_bootstrap(tiled_cov, N_bootstrap, weights)
@@ -302,7 +331,7 @@ def bootstrap(
     # )
     straps_admix_cov = run_bootstrap(tiled_admix_cov, N_bootstrap, weights)
     straps_corr_cov = run_bootstrap(tiled_corr_cov, N_bootstrap, weights)
-    # straps_G = run_bootstrap_ratio(tiled_num_G, tiled_tot_var, N_bootstrap, weights)
-    # straps_Ap = run_bootstrap_ratio(tiled_num_Ap, tiled_tot_var, N_bootstrap, weights)
+    straps_G = run_bootstrap_ratio(tiled_num_G, tiled_tot_var, N_bootstrap, weights)
+    straps_Ap = run_bootstrap_ratio(tiled_num_Ap, tiled_tot_var, N_bootstrap, weights)
 
-    return (straps_cov, straps_admix_cov, straps_corr_cov)  # , straps_G, straps_Ap)
+    return (straps_cov, straps_admix_cov, straps_corr_cov, straps_G, straps_Ap)
