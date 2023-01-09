@@ -209,20 +209,18 @@ def get_tot_var(af: np.ndarray, sample_size):
     return tot_var
 
 
-def get_matrix_sum(covmat: np.ndarray, include_diag=False):
+def get_matrix_sum(covmat: np.ndarray, include_diag=False, abs=False):
+    if abs:
+        covmat = np.abs(covmat)
     if include_diag:
-        k = 1
+        S = np.nansum(covmat)
     else:
-        k = 0
-    S = np.sum(covmat - np.triu(covmat, k=k)) # removes upper triangle
+        S = np.nansum(covmat - np.diag(np.diag(covmat)))
     return S
 
 
-def get_G(covmat, af, sample_size, include_diag=False):
-    if include_diag:
-        num = get_matrix_sum(covmat, k=1)
-    else:
-        num = get_matrix_sum(covmat, k=0)
+def get_G(covmat, af, sample_size, include_diag=False, abs=False):
+    num = get_matrix_sum(covmat, include_diag, abs)
     denom = get_tot_var(af, sample_size)
     G = num / denom
     return G
