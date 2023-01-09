@@ -209,7 +209,11 @@ def get_tot_var(af: np.ndarray, sample_size):
     return tot_var
 
 
-def get_matrix_sum(covmat: np.ndarray, k=0):
+def get_matrix_sum(covmat: np.ndarray, include_diag=False):
+    if include_diag:
+        k = 1
+    else:
+        k = 0
     S = np.sum(covmat - np.triu(covmat, k=k)) # removes upper triangle
     return S
 
@@ -265,7 +269,6 @@ def bootstrap(
     bias=True,
     drift_err=True,
 ):
-
     tiles = [(i, i + tile_size) for i in range(0, int(ts.sequence_length), tile_size)]
     sites = ts.tables.sites
     tile_masks = [
@@ -306,11 +309,11 @@ def bootstrap(
 
 
     tiled_num_G = [
-        get_matrix_sum(c, k=0)
+        get_matrix_sum(c, include_diag=False) 
         for c in tiled_corr_cov
     ]
     tiled_num_Ap = [
-        get_matrix_sum(c, k=1)
+        get_matrix_sum(c, include_diag=True)
         for c in tiled_corr_cov
     ]
     tiled_tot_var = [
