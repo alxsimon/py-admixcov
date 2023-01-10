@@ -37,7 +37,7 @@ def draw_sample_set_at(
     time: int,
     rng,
     pop: int,
-    n_sample,
+    n_sample: int,
 ):
     nodes = ts.tables.nodes
     all_samples = (nodes.population == pop) & (nodes.time == time) & (nodes.flags == 1)
@@ -56,9 +56,16 @@ def draw_sample_sets(
     times: list[int],
     rng,
     pop: int,
-    n_sample,
+    n_sample: int|list[int],
 ):
-    sample_sets = [draw_sample_set_at(ts, t, rng, pop, n_sample) for t in times]
+    if isinstance(n_sample, int):
+        sample_sets = [draw_sample_set_at(ts, t, rng, pop, n_sample) for t in times]
+    else:
+        assert len(times) == len(n_sample)
+        sample_sets = [
+            draw_sample_set_at(ts, t, rng, pop, n) 
+            for t, n in zip(times, n_sample)
+        ]
     return sample_sets
 
 
