@@ -63,7 +63,7 @@ def draw_sample_sets(
     else:
         assert len(times) == len(n_sample)
         sample_sets = [
-            draw_sample_set_at(ts, t, rng, pop, n) 
+            draw_sample_set_at(ts, t, rng, pop, n)
             for t, n in zip(times, n_sample)
         ]
     return sample_sets
