@@ -187,3 +187,12 @@ def get_admixture_proportions(
         for j in range(N_anc_pop):
             admix_proportions[ix, j] = spans[j] / np.sum(spans)
     return admix_proportions
+
+
+def create_tile_masks(ts, tile_size):
+    tiles = [(i, i + tile_size) for i in range(0, int(ts.sequence_length), tile_size)]
+    sites = ts.tables.sites
+    tile_masks = [
+        (start <= sites.position) & (sites.position < stop) for start, stop in tiles
+    ]
+    return tile_masks
