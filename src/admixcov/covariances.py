@@ -210,7 +210,7 @@ def get_matrix_sum(covmat: np.ndarray, include_diag=False, abs=False):
     return S
 
 
-def get_G(covmat, af, sample_size, include_diag=False, abs=False):
+def get_summary(covmat, af, sample_size, include_diag=False, abs=False):
     num = get_matrix_sum(covmat, include_diag, abs)
     denom = get_tot_var(af, sample_size)
     G = num / denom
@@ -223,7 +223,7 @@ def get_G(covmat, af, sample_size, include_diag=False, abs=False):
 
 def run_bootstrap(tiled_stat, N_bootstrap, weights):
     straps = []
-    for b in np.arange(N_bootstrap):
+    for _ in np.arange(N_bootstrap):
         bidx = np.random.randint(0, len(tiled_stat), size=len(tiled_stat))
         masked = np.ma.masked_invalid(np.stack(tiled_stat)[bidx])
         straps.append(
@@ -235,7 +235,7 @@ def run_bootstrap(tiled_stat, N_bootstrap, weights):
 def run_bootstrap_ratio(tiled_stat_num, tiled_stat_denom, N_bootstrap, weights):
     straps_num = []
     straps_denom = []
-    for b in np.arange(N_bootstrap):
+    for _ in np.arange(N_bootstrap):
         bidx = np.random.randint(0, len(tiled_stat_num), size=len(tiled_stat_num))
         straps_num.append(
             np.ma.average(
@@ -253,7 +253,7 @@ def run_bootstrap_ratio(tiled_stat_num, tiled_stat_denom, N_bootstrap, weights):
 
 
 def bootstrap(
-    tile_masks,
+    tile_idxs,
     af,
     n_sample,
     Q,
@@ -266,10 +266,10 @@ def bootstrap(
     abs_G=False,
     abs_Ap=False,
 ):
-    n_loci = np.array([np.sum(tile) for tile in tile_masks])
+    n_loci = np.array([tile.size for tile in tile_idxs])
 
-    tiled_af = [af[:, mask] for mask in tile_masks]
-    tiled_sample_size = [n_sample[:, mask] for mask in tile_masks]
+    tiled_af = [af[:, idx] for idx in tile_idxs]
+    tiled_sample_size = [n_sample[:, idx] for idx in tile_idxs]
 
     assert af.shape == n_sample.shape
     tiled_cov = [
@@ -280,10 +280,10 @@ def bootstrap(
     assert ref_af.shape == n_sample_ref.shape
     tiled_admix_cov = [
         get_admix_covariance_matrix(
-            Q, ref_af[:, mask], bias=bias,
-            ref_sample_size=n_sample_ref[:, mask],
+            Q, ref_af[:, idx], bias=bias,
+            ref_sample_size=n_sample_ref[:, idx],
         )
-        for mask in tile_masks
+        for idx in tile_idxs
     ]
 
     if drift_err:
@@ -302,12 +302,12 @@ def bootstrap(
     ]
 
     tiled_num_G = [
-        get_matrix_sum(c, include_diag=False, abs=abs_G) 
-        for c in tiled_corr_cov
+        get_matrix_sum(cc, include_diag=False, abs=abs_G) 
+        for cc in tiled_corr_cov
     ]
     tiled_num_Ap = [
-        get_matrix_sum(c, include_diag=True, abs=abs_Ap)
-        for c in tiled_corr_cov
+        get_matrix_sum(a, include_diag=True, abs=abs_Ap)
+        for a in tiled_admix_cov
     ]
     tiled_tot_var = [
         get_tot_var(a, n)

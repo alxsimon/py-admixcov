@@ -189,10 +189,14 @@ def get_admixture_proportions(
     return admix_proportions
 
 
-def create_tile_masks(ts, tile_size):
+def create_tile_idxs(ts, tile_size):
     tiles = [(i, i + tile_size) for i in range(0, int(ts.sequence_length), tile_size)]
     sites = ts.tables.sites
-    tile_masks = [
-        (start <= sites.position) & (sites.position < stop) for start, stop in tiles
+    tile_idxs = [
+        np.where(
+            (start <= sites.position) & (sites.position < stop)
+        )[0]
+        for start, stop in tiles
     ]
-    return tile_masks
+    # no need to check empty tiles in simulations
+    return tile_idxs
