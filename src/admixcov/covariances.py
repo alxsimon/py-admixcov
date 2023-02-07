@@ -222,9 +222,11 @@ def get_summary(covmat, af, sample_size, include_diag=False, abs=False):
 
 
 def run_bootstrap(tiled_stat, N_bootstrap, weights):
+    rng = np.random.default_rng()
+    L = len(tiled_stat)
     straps = []
     for _ in np.arange(N_bootstrap):
-        bidx = np.random.randint(0, len(tiled_stat), size=len(tiled_stat))
+        bidx = rng.integers(0, L, size=L)
         masked = np.ma.masked_invalid(np.stack(tiled_stat)[bidx])
         straps.append(
             np.ma.average(masked, axis=0, weights=weights[bidx]).data
@@ -233,10 +235,12 @@ def run_bootstrap(tiled_stat, N_bootstrap, weights):
 
 
 def run_bootstrap_ratio(tiled_stat_num, tiled_stat_denom, N_bootstrap, weights):
+    rng = np.random.default_rng()
+    L = len(tiled_stat_num)
     straps_num = []
     straps_denom = []
     for _ in np.arange(N_bootstrap):
-        bidx = np.random.randint(0, len(tiled_stat_num), size=len(tiled_stat_num))
+        bidx = rng.integers(0, L, size=L)
         straps_num.append(
             np.ma.average(
                 np.ma.masked_invalid(np.stack(tiled_stat_num)[bidx]),
@@ -322,3 +326,76 @@ def bootstrap(
     straps_Ap = run_bootstrap_ratio(tiled_num_Ap, tiled_tot_var, N_bootstrap, weights)
 
     return (straps_cov, straps_admix_cov, straps_corr_cov, straps_G, straps_Ap)
+
+
+
+def tiling(
+    tile_idxs,
+    af,
+    n_sample,
+    Q,
+    ref_af,
+    n_sample_ref,
+    alphas,
+    N_bootstrap=5e3,
+    bias=True,
+    drift_err=True,
+    abs_G=False,
+    abs_Ap=False,
+):
+    n_loci = np.array([tile.size for tile in tile_idxs])
+
+    tiled_af = [af[:, idx] for idx in tile_idxs]
+    tiled_sample_size = [n_sample[:, idx] for idx in tile_idxs]
+
+    assert af.shape == n_sample.shape
+    tiled_cov = [
+        get_covariance_matrix(a, bias=bias, sample_size=n)
+        for a, n in zip(tiled_af, tiled_sample_size)
+    ]
+
+    assert ref_af.shape == n_sample_ref.shape
+    tiled_admix_cov = [
+        get_admix_covariance_matrix(
+            Q, ref_af[:, idx], bias=bias,
+            ref_sample_size=n_sample_ref[:, idx],
+        )
+        for idx in tile_idxs
+    ]
+
+    if drift_err:
+        tiled_drift_err = [
+            get_drift_err_matrix(
+                solve_for_variances(np.diag(c - a), alphas),
+                alphas,
+            )
+            for c, a in zip(tiled_cov, tiled_admix_cov)
+        ]
+    else:
+        tiled_drift_err = [np.zeros(tiled_cov[0].shape)] * len(tiled_cov)
+
+    tiled_corr_cov = [
+        c - a - d for c, a, d in zip(tiled_cov, tiled_admix_cov, tiled_drift_err)
+    ]
+
+    tiled_num_G = [
+        get_matrix_sum(cc, include_diag=False, abs=abs_G) 
+        for cc in tiled_corr_cov
+    ]
+    tiled_num_Ap = [
+        get_matrix_sum(a, include_diag=True, abs=abs_Ap)
+        for a in tiled_admix_cov
+    ]
+    tiled_tot_var = [
+        get_tot_var(a, n)
+        for a, n in zip(tiled_af, tiled_sample_size)
+    ]
+
+    weights = n_loci / np.sum(n_loci)
+    # straps_cov = run_bootstrap(tiled_cov, N_bootstrap, weights)
+    # straps_corr_cov = run_bootstrap(tiled_corr_cov, N_bootstrap, weights)
+    # straps_admix_cov = run_bootstrap(tiled_admix_cov, N_bootstrap, weights)
+    # straps_G = run_bootstrap_ratio(tiled_num_G, tiled_tot_var, N_bootstrap, weights)
+    # straps_Ap = run_bootstrap_ratio(tiled_num_Ap, tiled_tot_var, N_bootstrap, weights)
+
+    return (tiled_corr_cov, tiled_admix_cov, tiled_num_G, tiled_num_Ap, tiled_tot_var, weights)
