@@ -313,10 +313,18 @@ def bootstrap(
     ragged_af[:] = tiled_af
     ragged_sample_size = np.empty((L,), dtype=object)
     ragged_sample_size[:] = tiled_sample_size
+    straps_cov = []
     straps_corr_cov = []
     straps_G = []
     straps_Ap = []
     for _ in np.arange(N_bootstrap):
+        straps_cov.append(
+            get_boot_average(
+                rng.integers(0, L, size=L),
+                tiled_cov,
+                weights,
+            )
+        )
         straps_corr_cov.append(
             get_boot_average(
                 rng.integers(0, L, size=L),
@@ -337,4 +345,9 @@ def bootstrap(
                 ragged_af, ragged_sample_size, weights)
         )
 
-    return (np.stack(straps_corr_cov), np.stack(straps_G), np.stack(straps_Ap))
+    return (
+        np.stack(straps_cov),
+        np.stack(straps_corr_cov),
+        np.stack(straps_G),
+        np.stack(straps_Ap)
+    )
