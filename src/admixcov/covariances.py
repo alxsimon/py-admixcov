@@ -252,6 +252,7 @@ def bootstrap(
     n_sample_ref,
     alphas,
     N_bootstrap=5e3,
+    full_output=False,
     bias=True,
     drift_err=True,
     abs_G=False,
@@ -296,6 +297,11 @@ def bootstrap(
         get_matrix_sum(cc, include_diag=False, abs=abs_G) 
         for cc in tiled_corr_cov
     ]
+    if full_output:
+        tiled_num_G_nc = [
+            get_matrix_sum(c, include_diag=False, abs=abs_G) 
+            for c in tiled_cov
+        ]
     tiled_num_Ap = [
         get_matrix_sum(a, include_diag=True, abs=abs_Ap)
         for a in tiled_admix_cov
@@ -316,15 +322,9 @@ def bootstrap(
     straps_cov = []
     straps_corr_cov = []
     straps_G = []
+    straps_G_nc = []
     straps_Ap = []
     for _ in np.arange(N_bootstrap):
-        straps_cov.append(
-            get_boot_average(
-                rng.integers(0, L, size=L),
-                tiled_cov,
-                weights,
-            )
-        )
         straps_corr_cov.append(
             get_boot_average(
                 rng.integers(0, L, size=L),
@@ -344,10 +344,28 @@ def bootstrap(
                 tiled_num_Ap, tiled_raw_tot_var,
                 ragged_af, ragged_sample_size, weights)
         )
+        if full_output:
+            straps_cov.append(
+                get_boot_average(
+                    rng.integers(0, L, size=L),
+                    tiled_cov,
+                    weights,
+                )
+            )
+            straps_G_nc.append(
+                get_boot_average_ratio(
+                    rng.integers(0, L, size=L),
+                    tiled_num_G_nc, tiled_raw_tot_var,
+                    ragged_af, ragged_sample_size, weights)
+            )
 
-    return (
-        np.stack(straps_cov),
-        np.stack(straps_corr_cov),
-        np.stack(straps_G),
-        np.stack(straps_Ap)
-    )
+    straps = {
+        'corr_cov': np.stack(straps_corr_cov),
+        'G': np.stack(straps_G),
+        'Ap': np.stack(straps_Ap),
+    }
+    if full_output:
+        straps['cov'] = np.stack(straps_cov)
+        straps['G_nc'] = np.stack(straps_G_nc)
+
+    return straps
