@@ -221,6 +221,68 @@ def get_summary(covmat, af, sample_size, include_diag=False, abs=False):
 # ================================================================
 # Bootstrapping
 
+
+def bootstrap_ci(estimate, straps, alpha=0.05, axis=0):
+    # pivot method from Vince's cvtkpy
+    qlower, qupper = (
+        np.nanquantile(straps, alpha/2, axis=axis),
+        np.nanquantile(straps, 1-alpha/2, axis=axis)
+    )
+    CIs = 2*estimate - qupper, estimate, 2*estimate - qlower
+    return CIs
+
+
+def weighted_mean(array, weights, axis=0):
+    masked = np.ma.masked_invalid(array)
+    mean = np.ma.average(masked, axis=axis, weights=weights)
+    return mean.data if isinstance(mean, np.ma.MaskedArray) else mean
+
+
+def bootstrap_stat(tiled_stat, weights, N_bootstrap, alpha=0.05, statistic=None):
+    That = statistic
+    rng = np.random.default_rng()
+    L = len(tiled_stat)
+    straps = []
+    for _ in np.arange(N_bootstrap):
+        bidx = rng.integers(0, L, size=L)
+        straps.append(
+            weighted_mean(
+                tiled_stat[bidx],
+                weights[bidx],
+                axis=0,
+            )
+        )
+    straps = np.array(straps)
+    if That is None:
+        That = np.mean(straps, axis=0)
+    return bootstrap_ci(That, straps, alpha=alpha, axis=0)
+
+
+def bootstrap_ratio(tiled_num, tiled_denom, weights, N_bootstrap, alpha=0.05, statistic=None):
+    That = statistic
+    assert tiled_num.shape[0] == tiled_denom.shape[0]
+    rng = np.random.default_rng()
+    L = len(tiled_num)
+    straps = []
+    for _ in np.arange(N_bootstrap):
+        bidx = rng.integers(0, L, size=L)
+        num = weighted_mean(
+            tiled_num[bidx],
+            weights[bidx],
+            axis=0,
+        )
+        denom = weighted_mean(
+            tiled_denom[bidx],
+            weights[bidx],
+            axis=0,
+        )
+        straps.append(num / denom)
+    straps = np.array(straps)
+    if That is None:
+        That = np.mean(straps, axis=0)
+    return bootstrap_ci(That, straps, alpha=alpha, axis=0)
+
+
 def get_boot_average(bidx, tiled_stat, weights):
     masked = np.ma.masked_invalid(np.stack(tiled_stat)[bidx])
     strap = np.ma.average(masked, axis=0, weights=weights[bidx]).data
@@ -230,7 +292,7 @@ def get_boot_average(bidx, tiled_stat, weights):
 def get_boot_average_ratio(bidx, tiled_stat_num, tiled_raw_tot_var, ragged_af, ragged_sample_size, weights):
     b = get_pseudohap_sampling_bias(
         np.concatenate(ragged_af[bidx], axis=1),
-		np.concatenate(ragged_sample_size[bidx], axis=1),
+        np.concatenate(ragged_sample_size[bidx], axis=1),
     )
     strap_num = np.ma.average(
         np.ma.masked_invalid(np.stack(tiled_stat_num)[bidx]),
