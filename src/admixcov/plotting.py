@@ -67,3 +67,65 @@ def plot_covmats(
     if main_title is not None:
         fig.suptitle(main_title)
     return fig
+
+#======================================
+# plotting of confidence interval data
+
+def plot_ci_line(
+    x: np.ndarray | list,
+    CI: tuple,
+    ax,
+    color='black',
+    **kwargs
+):
+    lower = CI[0]
+    m =CI[1]
+    upper = CI[2]
+    yerr = np.array([m - lower, upper - m])
+    ax.errorbar(x, m, yerr, color=color, ecolor=color, **kwargs)
+
+def cov_lineplot(times, CIs: list[tuple], ax, colors, time_padding=0, **kwargs):
+    k = len(times) - 1
+    for i in range(k-1):
+        plot_ci_line(np.array(times[i+1:-1]) + 1, np.stack(CIs)[:, i, i+1:], ax, color=colors[i], **kwargs)
+    ax.hlines(y=0, xmin=0, xmax=times[1] + time_padding, linestyles='dotted', colors='black')
+    ax.set_xlim(times[1] + time_padding, -time_padding)
+    ax.set_xlabel('time')
+    ax.set_ylabel('covariance')
+    ax.spines['top'].set_visible(False)
+    ax.spines['right'].set_visible(False)
+
+
+def combine_covmat_CIs(ci_l: np.ndarray, ci_u: np.ndarray):
+	N = ci_l[1].shape[0]
+	res = tuple([x.copy() for x in ci_l])
+	tri_up = np.triu_indices(N, k=1)
+	for k in range(3):
+		res[k][np.arange(N)[:, None] == np.arange(N)] = np.nan
+		res[k][tri_up] = ci_u[k][tri_up]
+	return res
+
+def plot_covmat_ci(CI, ax, scale_max=None):
+    N_delta = CI[1].shape[0]
+    delta_labels = [f"$\\Delta_{{{x}}}$" for x in range(N_delta)]
+    tmp_mat = CI[1].copy()
+    if scale_max is None:
+        scale_max = np.max(np.abs([np.nanmin(tmp_mat), np.nanmax(tmp_mat)]))
+    sns.heatmap(
+        tmp_mat.T,
+        cmap="vlag",
+        vmin=-scale_max,
+        vmax=scale_max,
+        xticklabels=delta_labels,  # type: ignore
+        yticklabels=delta_labels,  # type: ignore
+        linewidths=0.5,  # type: ignore
+        ax=ax,
+    )
+    sig = (CI[0] * CI[2]) > 0
+    for z in range(sig.shape[0]):
+        for j in range(sig.shape[0]):
+            if (sig[j, z]) & (z != j):
+                _ = ax.text(
+                    j + 0.5, z + 0.5, "*", ha="center", va="center"
+                )
+    ax.axline(xy1=(N_delta, N_delta), slope=1, color='black')

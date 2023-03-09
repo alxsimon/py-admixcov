@@ -1,6 +1,7 @@
 import tskit
 import numpy as np
 from numpy.typing import NDArray
+from ..covariances import *
 
 
 def get_times(ts: tskit.TreeSequence):
@@ -200,3 +201,78 @@ def create_tile_idxs(ts, tile_size):
     ]
     # no need to check empty tiles in simulations
     return tile_idxs
+
+
+def analyze_trees(
+    ts,
+    times: np.ndarray | list[int],
+    n_samples: list[int],
+    admix_pop: int,
+    refs: list[dict],
+    alpha_mask: np.ndarray,
+    rng=None,
+):
+    assert(list(refs[0].keys()) == ['pop', 'time', 'n'])
+    if rng is None:
+        rng = np.random.default_rng()
+    
+    samples_nodes = draw_sample_sets(ts, times, rng, admix_pop, n_samples)
+    ref_nodes = [
+        draw_sample_set_at(ts, r['time'], rng, r['pop'], r['n'])
+        for r in refs
+    ]
+
+    ref_geno_sets, geno_sets = get_pseudohap_genotypes(
+        ts, rng,
+        samples=(ref_nodes, samples_nodes),
+    )
+
+    af = np.stack([
+        np.mean(G, axis=1)
+        for G in geno_sets
+    ], axis=0)
+    ref_af = np.stack([
+        np.mean(G, axis=1)
+        for G in ref_geno_sets
+    ], axis=0)
+
+    # admixture computations
+    samples_inds = [np.unique([ts.node(u).individual for u in s]) for s in samples_nodes]
+    ancestral_census_nodes = [
+        np.where(
+            (ts.tables.nodes.population == r['pop'])
+            & (ts.tables.nodes.time == r['time'])
+        )[0]
+        for r in refs
+    ]
+    Q = np.stack([
+        np.mean(
+            get_admixture_proportions(ts, g, ancestral_census_nodes),
+            axis=0,
+        )
+        for g in samples_inds
+    ])
+
+    alphas = q2a_simple(Q, alpha_mask)
+    alphas[alphas < 0] = 0 # issues due to drift
+    covmat = get_covariance_matrix(
+        af, bias=True,
+        sample_size=np.array(n_samples),
+    )
+    admix_cov = get_admix_covariance_matrix(
+        Q, ref_af, bias=True,
+        ref_sample_size=np.array([d['n'] for d in refs]),
+    )
+    var_drift = solve_for_variances(
+        np.diag(covmat - admix_cov), alphas,
+    )
+    drift_err = get_drift_err_matrix(
+        var_drift, alphas,
+    )
+
+    return {
+        'covmat': covmat,
+        'admix_cov': admix_cov,
+        'drift_err': drift_err,
+        'Q': Q,
+    }
