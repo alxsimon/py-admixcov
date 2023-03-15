@@ -270,9 +270,48 @@ def analyze_trees(
         var_drift, alphas,
     )
 
+    # pca correction
+    gt = np.concatenate([
+        np.concatenate(geno_sets, axis=1),
+        np.concatenate(ref_geno_sets, axis=1),
+    ], axis=1).T # (samples, variants)
+    N = gt.shape[0]
+    mean_gt = np.mean(gt, axis=0)
+    p = ((1 + np.sum(gt, axis=0)) / (2 + 2 * N))
+
+    X = ((gt - mean_gt) / ((p * (1 - p))**.5))
+    Psi = np.cov(X)
+    eval, evec = np.linalg.eigh(Psi)
+    i = np.argsort(eval)
+    i = i[::-1]
+    evec = evec[:,i]
+    eval = eval[i]
+
+    N_vec = 2
+    count_samples = np.sum(n_samples)
+    gamma = np.zeros((gt.shape[1], N_vec))
+    for i in range(N_vec):
+        gamma[:,i] = np.nansum(evec[:count_samples, i] * gt[:count_samples].T, axis=1) / np.sum(evec[:count_samples, i]**2)
+
+    gt_exp = np.dot(evec[:count_samples, :N_vec], gamma.T) # gamma_1*A1 + gamma_2*A2
+    gt_adj = gt[:count_samples] - gt_exp
+    af_adj = np.stack(
+        [
+            np.mean(gt_adj[int(np.sum(n_samples[:i])):int(np.sum(n_samples[:(i+1)]))], axis=0)
+            for i, n in enumerate(n_samples)
+        ]
+    )
+
+    covmat_pca = get_covariance_matrix(
+        af_adj, bias=True,
+        sample_size=np.array(n_samples),
+    )
+
     return {
         'covmat': covmat,
         'admix_cov': admix_cov,
         'drift_err': drift_err,
         'Q': Q,
+        'covmat_pca': covmat_pca,
+        'evec': evec,
     }
