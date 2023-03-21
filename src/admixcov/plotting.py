@@ -84,13 +84,15 @@ def plot_ci_line(
     yerr = np.array([m - lower, upper - m])
     ax.errorbar(x, m, yerr, color=color, ecolor=color, **kwargs)
 
-def cov_lineplot(times, CIs: list[tuple], ax, colors, time_padding=0, d=0, **kwargs):
+
+def cov_lineplot(times, CIs: list[tuple], ax, colors, time_padding=0, d=0, ylim=None, **kwargs):
     k = len(times) - 1
 
     jit = np.zeros((k - 1, k - 1))
-    for j in range(k - 1):
-        n_points = j + 1
-        jit[:(j + 1), j] = -1 * (np.array(range(0, d * n_points, d)) - d * (n_points - 1) / 2)
+    if d != 0:
+        for j in range(k - 1):
+            n_points = j + 1
+            jit[:(j + 1), j] = -1 * (np.array(range(0, d * n_points, d)) - d * (n_points - 1) / 2)
     
     for i in range(k-1):
         plot_ci_line(np.array(times[i+1:-1]) + jit[i, i:], np.stack(CIs)[:, i, i+1:], ax, color=colors[i], **kwargs)
@@ -100,6 +102,20 @@ def cov_lineplot(times, CIs: list[tuple], ax, colors, time_padding=0, d=0, **kwa
     ax.set_ylabel('covariance')
     ax.spines['top'].set_visible(False)
     ax.spines['right'].set_visible(False)
+
+    if d != 0:
+        if ylim is None:
+            ylim = ax.get_ylim()
+
+        y_5p = (ylim[1] - ylim[0]) * 0.05 
+        ax.set_ylim(ylim[0] - y_5p, ylim[1])
+        for j in range(k - 1):
+            hs = d * (j + 1) / 2
+            lx = (times[j + 1] - hs, times[j + 1] + hs)
+            ax.plot(lx, (ylim[0], ylim[0]), 'k-', linewidth=1)
+            ax.plot((times[j + 1], times[j + 1]), (ylim[0], ylim[0] - y_5p), 'k-', linewidth=1)
+    else:
+        ax.set_ylim(ylim)
 
 
 def combine_covmat_CIs(ci_l: np.ndarray, ci_u: np.ndarray):
