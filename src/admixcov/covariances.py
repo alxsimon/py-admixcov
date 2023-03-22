@@ -247,42 +247,6 @@ def stats_from_matrices(covmat_nc, admix_cov, drift_err):
     return (totvar, G_nc, G, Ap)
 
 
-def stats_from_matrices_pca(covmat_nc, admix_cov, drift_err, covmat_pca):
-    k = covmat_nc.shape[0]
-    G = []
-    G_nc = []
-    G_pca = []
-    Ap = []
-    totvar = []
-    for i in range(1, k + 1):
-        totvar.append(np.sum(covmat_nc[:i, :i]))
-        G.append(
-            get_matrix_sum(
-                (covmat_nc - admix_cov - drift_err)[:i, :i],
-                include_diag=False, abs=False
-            ) / totvar[-1]
-        )
-        G_nc.append(
-            get_matrix_sum(
-                covmat_nc[:i, :i],
-                include_diag=False, abs=False
-            ) / totvar[-1]
-        )
-        G_pca.append(
-            get_matrix_sum(
-                covmat_pca[:i, :i],
-                include_diag=False, abs=False
-            ) / totvar[-1]
-        )
-        Ap.append(
-            get_matrix_sum(
-                admix_cov[:i, :i],
-                include_diag=True, abs=False
-            ) / totvar[-1]
-        )
-    return (totvar, G_nc, G, G_pca, Ap)
-
-
 def get_ci(stat: np.ndarray, alpha=0.05, axis=0):
     qlower, qupper = (
         np.quantile(stat, alpha/2, axis=axis),
