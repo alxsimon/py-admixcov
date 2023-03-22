@@ -97,7 +97,7 @@ def cov_lineplot(times, CIs: list[tuple], ax, colors, time_padding=0, d=0, ylim=
     for i in range(k-1):
         plot_ci_line(np.array(times[i+1:-1]) + jit[i, i:], np.stack(CIs)[:, i, i+1:], ax, color=colors[i], **kwargs)
     ax.hlines(y=0, xmin=0, xmax=times[1] + time_padding, linestyles='dotted', colors='black')
-    ax.set_xlim(times[1] + time_padding, -time_padding)
+    ax.set_xlim(times[1] + time_padding, times[-1] - time_padding)
     ax.set_xlabel('time')
     ax.set_ylabel('covariance')
     ax.spines['top'].set_visible(False)
