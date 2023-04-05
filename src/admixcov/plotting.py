@@ -127,9 +127,12 @@ def combine_covmat_CIs(ci_l: np.ndarray, ci_u: np.ndarray):
 		res[k][tri_up] = ci_u[k][tri_up]
 	return res
 
-def plot_covmat_ci(CI, ax, scale_max=None):
+def plot_covmat_ci(CI, ax, scale_max: float=None, delta_labels: list[str]=None):
     N_delta = CI[1].shape[0]
-    delta_labels = [f"$\\Delta_{{{x}}}$" for x in range(N_delta)]
+    if delta_labels is None:
+        delta_labels = [f"$\\Delta_{{{x}}}$" for x in range(N_delta)]
+    else:
+        assert len(delta_labels) == N_delta
     tmp_mat = CI[1].copy()
     if scale_max is None:
         scale_max = np.max(np.abs([np.nanmin(tmp_mat), np.nanmax(tmp_mat)]))
@@ -142,6 +145,7 @@ def plot_covmat_ci(CI, ax, scale_max=None):
         yticklabels=delta_labels,  # type: ignore
         linewidths=0.5,  # type: ignore
         ax=ax,
+        cbar_kws={'label': 'covariance'},
     )
     sig = (CI[0] * CI[2]) > 0
     for z in range(sig.shape[0]):
