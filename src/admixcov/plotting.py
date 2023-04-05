@@ -95,7 +95,7 @@ def cov_lineplot(times, CIs: list[tuple], ax, colors, time_padding=0, d=0, ylim=
             jit[:(j + 1), j] = -1 * (np.array(range(0, d * n_points, d)) - d * (n_points - 1) / 2)
     
     for i in range(k-1):
-        plot_ci_line(np.array(times[i+1:-1]) + jit[i, i:], np.stack(CIs)[:, i, i+1:], ax, color=colors[i], **kwargs)
+        plot_ci_line(np.array(times[i+1:-1]) + jit[i, i:], np.stack(CIs)[:, i, i+1:], ax, color=colors[i], label=f"$\\Delta_{{{int(times[i])}}}$", **kwargs)
     ax.hlines(y=0, xmin=0, xmax=times[1] + time_padding, linestyles='dotted', colors='black')
     ax.set_xlim(times[1] + time_padding, times[-1] - time_padding)
     ax.set_xlabel('time')
@@ -127,7 +127,7 @@ def combine_covmat_CIs(ci_l: np.ndarray, ci_u: np.ndarray):
 		res[k][tri_up] = ci_u[k][tri_up]
 	return res
 
-def plot_covmat_ci(CI, ax, scale_max: float=None, delta_labels: list[str]=None):
+def plot_covmat_ci(CI, ax, scale_max: float=None, delta_labels: list[str]=None, **kwargs):
     N_delta = CI[1].shape[0]
     if delta_labels is None:
         delta_labels = [f"$\\Delta_{{{x}}}$" for x in range(N_delta)]
@@ -145,7 +145,7 @@ def plot_covmat_ci(CI, ax, scale_max: float=None, delta_labels: list[str]=None):
         yticklabels=delta_labels,  # type: ignore
         linewidths=0.5,  # type: ignore
         ax=ax,
-        cbar_kws={'label': 'covariance'},
+        **kwargs,
     )
     sig = (CI[0] * CI[2]) > 0
     for z in range(sig.shape[0]):

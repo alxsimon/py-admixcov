@@ -236,6 +236,8 @@ def analyze_trees(
         for G in ref_geno_sets
     ], axis=0)
 
+    hz = np.mean(af * (1 - af), axis=1)
+
     # admixture computations
     samples_inds = [np.unique([ts.node(u).individual for u in s]) for s in samples_nodes]
     ancestral_census_nodes = [
@@ -275,4 +277,5 @@ def analyze_trees(
         'admix_cov': admix_cov,
         'drift_err': drift_err,
         'Q': Q,
+        'hz': hz,
     }
