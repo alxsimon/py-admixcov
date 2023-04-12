@@ -85,7 +85,7 @@ def plot_ci_line(
     ax.errorbar(x, m, yerr, color=color, ecolor=color, **kwargs)
 
 
-def cov_lineplot(times, CIs: list[tuple], ax, colors, time_padding=0, d=0, ylim=None, **kwargs):
+def cov_lineplot(times, CIs: list[tuple], ax, colors, time_padding=0, d=0, ylim=None, labels=None, **kwargs):
     k = len(times) - 1
 
     jit = np.zeros((k - 1, k - 1))
@@ -93,9 +93,14 @@ def cov_lineplot(times, CIs: list[tuple], ax, colors, time_padding=0, d=0, ylim=
         for j in range(k - 1):
             n_points = j + 1
             jit[:(j + 1), j] = -1 * (np.array(range(0, d * n_points, d)) - d * (n_points - 1) / 2)
+
+    if labels is None:
+        labels = [f"$\\Delta p_{{{int(times[i])}}}$" for i in range(k - 1)]
+    else:
+        assert len(labels) == (k - 1)
     
-    for i in range(k-1):
-        plot_ci_line(np.array(times[i+1:-1]) + jit[i, i:], np.stack(CIs)[:, i, i+1:], ax, color=colors[i], label=f"$\\Delta_{{{int(times[i])}}}$", **kwargs)
+    for i in range(k - 1):
+        plot_ci_line(np.array(times[(i + 1):-1]) + jit[i, i:], np.stack(CIs)[:, i, (i + 1):], ax, color=colors[i], label=labels[i], **kwargs)
     ax.hlines(y=0, xmin=0, xmax=times[1] + time_padding, linestyles='dotted', colors='black')
     ax.set_xlim(times[1] + time_padding, times[-1] - time_padding)
     ax.set_xlabel('time')
