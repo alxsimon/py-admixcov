@@ -31,10 +31,7 @@ def ds2stats(ds, alpha_mask, tile_size_variant):
         allele_freq(geno, mask)
         for mask in ds.mask_cohorts.values
     ])
-    sample_size = np.array([
-        np.sum(mask)
-        for mask in ds.mask_cohorts.values
-    ])
+    hz = np.mean(af * (1 - af), axis=1)
     Q = admix = np.stack([
         np.mean(ds.sample_admixture[mask], axis=0)
         for mask in ds.mask_cohorts.values
@@ -139,4 +136,5 @@ def ds2stats(ds, alpha_mask, tile_size_variant):
         straps_G,
         straps_Ap,
         straps_totvar,
+        hz,
     )
