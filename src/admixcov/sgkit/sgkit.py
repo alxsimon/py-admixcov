@@ -18,7 +18,7 @@ def create_tile_idxs(ds, type: str, size: int=1000):
     return tile_masks
 
 
-def ds2stats(ds, alpha_mask, tile_size_variant):
+def ds2stats(ds, alpha_mask, tile_size_variant, N_boot=1e4):
     times = [np.mean(ds.sample_date_bp.values[mask]) for mask in ds.mask_cohorts.values]
     geno = ds.call_genotype.values[:,:,0].T.astype(float)
     geno[geno == -1] = np.nan
@@ -64,7 +64,6 @@ def ds2stats(ds, alpha_mask, tile_size_variant):
             include_diag=True, abs=False
         ) / totvar
     
-    N_boot = 1e4
     tile_idxs = create_tile_idxs(ds, type='variant', size=tile_size_variant)
     sizes = [x.size for x in tile_idxs] # Number of SNPs in tiles
 
@@ -104,7 +103,8 @@ def ds2stats(ds, alpha_mask, tile_size_variant):
     weights = n_loci / np.sum(n_loci)
 
     # do the bootstraps
-    straps_cov = bootstrap_stat(tiled_corr_cov, weights, N_boot)
+    straps_cov = bootstrap_stat(tiled_cov, weights, N_boot)
+    straps_corr_cov = bootstrap_stat(tiled_corr_cov, weights, N_boot)
 
     tmp_totvar = np.sum(tiled_cov, axis=(1, 2))
     straps_totvar = bootstrap_stat(
@@ -128,11 +128,11 @@ def ds2stats(ds, alpha_mask, tile_size_variant):
         )
     
     return (
-        covmat,
         G,
         Ap,
         totvar,
         straps_cov,
+        straps_corr_cov,
         straps_G,
         straps_Ap,
         straps_totvar,
