@@ -103,23 +103,23 @@ def ds2stats(ds, alpha_mask, tile_size_variant, N_boot=1e4):
     tiled_totvar = np.sum(tiled_cov, axis=(1, 2))
     tiled_corr_totvar = np.sum(tiled_corr_cov, axis=(1, 2))
 
-    tiled_sum_var = [
+    tiled_sum_var = np.stack([
         np.sum(np.diag(c))
         for c in tiled_cov
-    ]
-    tiled_corr_sum_var = [
+    ])
+    tiled_corr_sum_var = np.stack([
         np.sum(np.diag(c))
         for c in tiled_corr_cov
-    ]
+    ])
 
-    tiled_sum_cov = [
+    tiled_sum_cov = np.stack([
         np.sum(c - np.diag(np.diag(c)))
         for c in tiled_cov
-    ]
-    tiled_corr_sum_cov = [
+    ])
+    tiled_corr_sum_cov = np.stack([
         np.sum(c - np.diag(np.diag(c)))
         for c in tiled_corr_cov
-    ]
+    ])
 
     # do the bootstraps
     n_loci = np.array([tile.size for tile in tile_idxs])
