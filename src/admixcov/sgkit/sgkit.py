@@ -99,42 +99,94 @@ def ds2stats(ds, alpha_mask, tile_size_variant, N_boot=1e4):
         c - a - d for c, a, d in zip(tiled_cov, tiled_admix_cov, tiled_drift_err)
     ])
 
+    # tiled sums
+    tiled_totvar = np.sum(tiled_cov, axis=(1, 2))
+    tiled_corr_totvar = np.sum(tiled_corr_cov, axis=(1, 2))
+
+    tiled_sum_var = [
+        np.sum(np.diag(c))
+        for c in tiled_cov
+    ]
+    tiled_corr_sum_var = [
+        np.sum(np.diag(c))
+        for c in tiled_corr_cov
+    ]
+
+    tiled_sum_cov = [
+        np.sum(c - np.diag(np.diag(c)))
+        for c in tiled_cov
+    ]
+    tiled_corr_sum_cov = [
+        np.sum(c - np.diag(np.diag(c)))
+        for c in tiled_corr_cov
+    ]
+
+    # do the bootstraps
     n_loci = np.array([tile.size for tile in tile_idxs])
     weights = n_loci / np.sum(n_loci)
 
-    # do the bootstraps
     straps_cov = bootstrap_stat(tiled_cov, weights, N_boot)
     straps_corr_cov = bootstrap_stat(tiled_corr_cov, weights, N_boot)
-
-    tmp_totvar = np.sum(tiled_cov, axis=(1, 2))
+    
     straps_totvar = bootstrap_stat(
-            tmp_totvar,
+            tiled_totvar,
             weights,
             N_boot,
         )
+    straps_corr_totvar = bootstrap_stat(
+            tiled_corr_totvar,
+            weights,
+            N_boot,
+        )
+    straps_sum_var = bootstrap_stat(
+            tiled_sum_var,
+            weights,
+            N_boot,
+        )
+    straps_corr_sum_var = bootstrap_stat(
+            tiled_corr_sum_var,
+            weights,
+            N_boot,
+        )
+    straps_sum_cov = bootstrap_stat(
+            tiled_sum_cov,
+            weights,
+            N_boot,
+        )
+    straps_corr_sum_cov = bootstrap_stat(
+            tiled_corr_sum_cov,
+            weights,
+            N_boot,
+        )
+
     straps_G = bootstrap_ratio(
             np.stack([get_matrix_sum(c) for c in tiled_corr_cov]),
-            tmp_totvar,
+            tiled_totvar,
             weights,
             N_boot,
             statistic=G,
         )
     straps_Ap = bootstrap_ratio(
             np.stack([get_matrix_sum(c, include_diag=True) for c in tiled_admix_cov]),
-            tmp_totvar,
+            tiled_totvar,
             weights,
             N_boot,
             statistic=Ap,
         )
     
     return (
-        G,
-        Ap,
-        totvar,
-        straps_cov,
-        straps_corr_cov,
-        straps_G,
-        straps_Ap,
-        straps_totvar,
-        hz,
+        G, #0
+        Ap, #1
+        totvar, #2
+        straps_cov, #3
+        straps_corr_cov, #4
+        straps_G, #5
+        straps_Ap, #6
+        straps_totvar, #7
+        straps_corr_totvar, #8
+        straps_sum_var, #9
+        straps_corr_sum_var, #10
+        straps_sum_cov, #11
+        straps_corr_sum_cov, #12
+        hz, #13
     )
