@@ -18,7 +18,7 @@ def create_tile_idxs(ds, type: str, size: int=1000):
     return tile_masks
 
 
-def ds2stats(ds, alpha_mask, tile_size_variant, N_boot=1e4):
+def ds2stats(ds, alpha_mask, tile_type, tile_size, N_boot=1e4):
     times = [np.mean(ds.sample_date_bp.values[mask]) for mask in ds.mask_cohorts.values]
     geno = ds.call_genotype.values[:,:,0].T.astype(float)
     geno[geno == -1] = np.nan
@@ -64,7 +64,7 @@ def ds2stats(ds, alpha_mask, tile_size_variant, N_boot=1e4):
             include_diag=True, abs=False
         ) / totvar
     
-    tile_idxs = create_tile_idxs(ds, type='variant', size=tile_size_variant)
+    tile_idxs = create_tile_idxs(ds, type=tile_type, size=tile_size)
     sizes = [x.size for x in tile_idxs] # Number of SNPs in tiles
 
     n_sample = ds.variant_count_nonmiss.values
