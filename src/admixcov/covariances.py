@@ -255,7 +255,7 @@ def get_ci(stat: np.ndarray, alpha=0.05, axis=0):
     estimate = np.mean(stat, axis=axis)
     return (qlower, estimate, qupper)
 
-# ================================================================
+# ==============
 # Bootstrapping
 
 
