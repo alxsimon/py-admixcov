@@ -92,7 +92,7 @@ def cov_lineplot(times, CIs: list[tuple], ax, colors, time_padding=0, d=0, ylim=
     if d != 0:
         for j in range(k - 1):
             n_points = j + 1
-            jit[:(j + 1), j] = -1 * (np.array(range(0, d * n_points, d)) - d * (n_points - 1) / 2)
+            jit[:(j + 1), j] = -1 * (np.arange(0, d * n_points, d) - d * (n_points - 1) / 2)
 
     if labels is None:
         labels = [f"$\\Delta p_{{{int(times[i])}}}$" for i in range(k - 1)]
