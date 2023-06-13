@@ -85,24 +85,21 @@ def plot_ci_line(
     ax.errorbar(x, m, yerr, color=color, ecolor=color, **kwargs)
 
 
-def cov_lineplot(times, CIs: list[tuple], ax, colors, time_padding=0, d=0, ylim=None, labels=None, **kwargs):
-    k = len(times) - 1
-
-    jit = np.zeros((k - 1, k - 1))
-    if d != 0:
-        for j in range(k - 1):
-            n_points = j + 1
-            jit[:(j + 1), j] = -1 * (np.arange(0, d * n_points, d) - d * (n_points - 1) / 2)
+def cov_lineplot(times, CIs: list[tuple], ax, colors, d=0, ylim=None, labels=None, **kwargs):
+    nti = len(times) - 1 # number of time intervals
 
     if labels is None:
-        labels = [f"$\\Delta p_{{{int(times[i])}}}$" for i in range(k - 1)]
+        labels = [f"$\\Delta p_{{{int(times[i])}}}$" for i in range(0, nti - 1)]
     else:
-        assert len(labels) == (k - 1)
+        assert len(labels) >= (nti - 1)
     
-    for i in range(k - 1):
-        plot_ci_line(np.array(times[(i + 1):-1]) + jit[i, i:], np.stack(CIs)[:, i, (i + 1):], ax, color=colors[i], label=labels[i], **kwargs)
-    ax.hlines(y=0, xmin=0, xmax=times[1] + time_padding, linestyles='dotted', colors='black')
-    ax.set_xlim(times[1] + time_padding, times[-1] - time_padding)
+    for i in range(nti - 1):
+        if d != 0:
+            n_points = np.array(range(i+1, nti))
+            shifts = i * d - (n_points - 1) * d / 2
+        else:
+            shifts = np.zeros(nti - 1 - i)
+        plot_ci_line(np.array(times[(i + 1):-1]) + shifts, np.stack(CIs)[:, i, (i + 1):], ax, color=colors[i], label=labels[i], **kwargs)
     ax.set_xlabel('time')
     ax.set_ylabel('covariance')
     ax.spines['top'].set_visible(False)
@@ -114,7 +111,7 @@ def cov_lineplot(times, CIs: list[tuple], ax, colors, time_padding=0, d=0, ylim=
 
         y_5p = (ylim[1] - ylim[0]) * 0.05 
         ax.set_ylim(ylim[0] - y_5p, ylim[1])
-        for j in range(k - 1):
+        for j in range(nti - 1):
             hs = d * (j + 1) / 2
             lx = (times[j + 1] - hs, times[j + 1] + hs)
             ax.plot(lx, (ylim[0], ylim[0]), 'k-', linewidth=1)
