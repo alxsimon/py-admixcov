@@ -282,9 +282,10 @@ def weighted_mean(array, weights, axis=0):
     return mean.data if isinstance(mean, np.ma.MaskedArray) else mean
 
 
-def bootstrap_stat(tiled_stat, weights, N_bootstrap, alpha=0.05, statistic=None):
+def bootstrap_stat(tiled_stat, weights, N_bootstrap, alpha=0.05, statistic=None, rng=None):
     That = statistic
-    rng = np.random.default_rng()
+    if rng is None:
+        rng = np.random.default_rng()
     L = len(tiled_stat)
     straps = []
     for _ in np.arange(N_bootstrap):
@@ -302,10 +303,11 @@ def bootstrap_stat(tiled_stat, weights, N_bootstrap, alpha=0.05, statistic=None)
     return bootstrap_ci(That, straps, alpha=alpha, axis=0)
 
 
-def bootstrap_ratio(tiled_num, tiled_denom, weights, N_bootstrap, alpha=0.05, statistic=None):
+def bootstrap_ratio(tiled_num, tiled_denom, weights, N_bootstrap, alpha=0.05, statistic=None, rng=None):
     That = statistic
     assert tiled_num.shape[0] == tiled_denom.shape[0]
-    rng = np.random.default_rng()
+    if rng is None:
+        rng = np.random.default_rng()
     L = len(tiled_num)
     straps = []
     for _ in np.arange(N_bootstrap):
@@ -363,6 +365,7 @@ def bootstrap(
     drift_err=True,
     abs_G=False,
     abs_Ap=False,
+    rng=None,
 ):
     n_loci = np.array([tile.size for tile in tile_idxs])
 
@@ -419,7 +422,8 @@ def bootstrap(
 
     weights = n_loci / np.sum(n_loci)
 
-    rng = np.random.default_rng()
+    if rng is None:
+        rng = np.random.default_rng()
     L = len(tiled_af)
     ragged_af = np.empty((L,), dtype=object)
     ragged_af[:] = tiled_af

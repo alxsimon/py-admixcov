@@ -18,7 +18,7 @@ def create_tile_idxs(ds, type: str, size: int=1000):
     return tile_masks
 
 
-def ds2stats(ds, alpha_mask, tile_type, tile_size, N_boot=1e4, min_SNPs=None):
+def ds2stats(ds, alpha_mask, tile_type, tile_size, N_boot=1e4, min_SNPs=None, rng=None):
     times = [np.mean(ds.sample_date_bp.values[mask]) for mask in ds.mask_cohorts.values]
     geno = ds.call_genotype.values[:,:,0].T.astype(float)
     geno[geno == -1] = np.nan
@@ -129,38 +129,44 @@ def ds2stats(ds, alpha_mask, tile_type, tile_size, N_boot=1e4, min_SNPs=None):
     n_loci = np.array([tile.size for tile in tile_idxs])
     weights = n_loci / np.sum(n_loci)
 
-    straps_cov = bootstrap_stat(tiled_cov, weights, N_boot)
-    straps_corr_cov = bootstrap_stat(tiled_corr_cov, weights, N_boot)
+    straps_cov = bootstrap_stat(tiled_cov, weights, N_boot, rng=rng)
+    straps_corr_cov = bootstrap_stat(tiled_corr_cov, weights, N_boot, rng=rng)
     
     straps_totvar = bootstrap_stat(
             tiled_totvar,
             weights,
             N_boot,
+            rng=rng,
         )
     straps_corr_totvar = bootstrap_stat(
             tiled_corr_totvar,
             weights,
             N_boot,
+            rng=rng,
         )
     straps_sum_var = bootstrap_stat(
             tiled_sum_var,
             weights,
             N_boot,
+            rng=rng,
         )
     straps_corr_sum_var = bootstrap_stat(
             tiled_corr_sum_var,
             weights,
             N_boot,
+            rng=rng,
         )
     straps_sum_cov = bootstrap_stat(
             tiled_sum_cov,
             weights,
             N_boot,
+            rng=rng,
         )
     straps_corr_sum_cov = bootstrap_stat(
             tiled_corr_sum_cov,
             weights,
             N_boot,
+            rng=rng,
         )
 
     straps_G = bootstrap_ratio(
@@ -168,6 +174,7 @@ def ds2stats(ds, alpha_mask, tile_type, tile_size, N_boot=1e4, min_SNPs=None):
             tiled_totvar,
             weights,
             N_boot,
+            rng=rng,
             # statistic=G,
         )
     straps_Ap = bootstrap_ratio(
@@ -175,6 +182,7 @@ def ds2stats(ds, alpha_mask, tile_type, tile_size, N_boot=1e4, min_SNPs=None):
             tiled_totvar,
             weights,
             N_boot,
+            rng=rng,
             # statistic=Ap,
         )
     
