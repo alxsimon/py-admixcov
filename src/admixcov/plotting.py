@@ -85,13 +85,18 @@ def plot_ci_line(
     ax.errorbar(x, m, yerr, color=color, ecolor=color, **kwargs)
 
 
-def cov_lineplot(times, CIs: list[tuple], ax, colors, d=0, ylim=None, labels=None, **kwargs):
+def cov_lineplot(times, CIs: list[tuple], ax, colors, d=0, ylim=None, labels=None, markers=None, **kwargs):
     nti = len(times) - 1 # number of time intervals
 
     if labels is None:
         labels = [f"$\\Delta p_{{{int(times[i])}}}$" for i in range(0, nti - 1)]
     else:
         assert len(labels) >= (nti - 1)
+
+    if markers is None:
+        markers = ['o'] * (nti - 1)
+    else:
+        assert len(markers) >= (nti - 1)
     
     for i in range(nti - 1):
         if d != 0:
@@ -99,7 +104,7 @@ def cov_lineplot(times, CIs: list[tuple], ax, colors, d=0, ylim=None, labels=Non
             shifts = i * d - (n_points - 1) * d / 2
         else:
             shifts = np.zeros(nti - 1 - i)
-        plot_ci_line(np.array(times[(i + 1):-1]) + shifts, np.stack(CIs)[:, i, (i + 1):], ax, color=colors[i], label=labels[i], **kwargs)
+        plot_ci_line(np.array(times[(i + 1):-1]) + shifts, np.stack(CIs)[:, i, (i + 1):], ax, color=colors[i], label=labels[i], marker=markers[i], **kwargs)
     ax.set_xlabel('time')
     ax.set_ylabel('covariance')
     ax.spines['top'].set_visible(False)
