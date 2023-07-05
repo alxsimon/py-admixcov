@@ -11,6 +11,7 @@ def plot_covmats(
     delta_labels=None,
     scales=None,
     mask_diag=False,
+    **kwargs
 ):
     N = len(list_covmat)
     N_delta = list_covmat[0].shape[0]
@@ -39,6 +40,7 @@ def plot_covmats(
             yticklabels=delta_labels,  # type: ignore
             linewidths=0.5,  # type: ignore
             ax=axs[i],
+            **kwargs,
         )
         if list_titles is not None:
             axs[i].set_title(list_titles[i])
@@ -85,7 +87,17 @@ def plot_ci_line(
     ax.errorbar(x, m, yerr, color=color, ecolor=color, **kwargs)
 
 
-def cov_lineplot(times, CIs: list[tuple], ax, colors, d=0, ylim=None, labels=None, markers=None, **kwargs):
+def cov_lineplot(
+        times,
+        CIs: list[tuple],
+        ax,
+        colors,
+        d=0,
+        ylim=None,
+        labels=None,
+        markers=None,
+        **kwargs
+    ):
     nti = len(times) - 1 # number of time intervals
 
     if labels is None:
