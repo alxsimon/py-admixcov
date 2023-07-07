@@ -116,7 +116,10 @@ def cov_lineplot(
             shifts = i * d - (n_points - 1) * d / 2
         else:
             shifts = np.zeros(nti - 1 - i)
-        plot_ci_line(np.array(times[(i + 1):-1]) + shifts, np.stack(CIs)[:, i, (i + 1):], ax, color=colors[i], label=labels[i], marker=markers[i], **kwargs)
+        plot_ci_line(
+            np.array(times[(i + 1):-1]) + shifts, np.stack(CIs)[:, i, (i + 1):],
+            ax, color=colors[i], label=labels[i], marker=markers[i], **kwargs
+        )
     ax.set_xlabel('time')
     ax.set_ylabel('covariance')
     ax.spines['top'].set_visible(False)
@@ -146,7 +149,13 @@ def combine_covmat_CIs(ci_l: np.ndarray, ci_u: np.ndarray):
 		res[k][tri_up] = ci_u[k][tri_up]
 	return res
 
-def plot_covmat_ci(CI, ax, scale_max: float=None, delta_labels: list[str]=None, **kwargs):
+def plot_covmat_ci(
+        CI,
+        ax,
+        scale_max: float=None,
+        delta_labels: list[str]=None,
+        **kwargs
+    ):
     N_delta = CI[1].shape[0]
     if delta_labels is None:
         delta_labels = [f"$\\Delta_{{{x}}}$" for x in range(N_delta)]
@@ -173,4 +182,3 @@ def plot_covmat_ci(CI, ax, scale_max: float=None, delta_labels: list[str]=None, 
                 _ = ax.text(
                     j + 0.5, z + 0.5, "*", ha="center", va="center"
                 )
-    ax.axline(xy1=(N_delta, N_delta), slope=1, color='black')
