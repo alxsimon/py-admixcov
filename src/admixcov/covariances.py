@@ -224,6 +224,7 @@ def stats_from_matrices(covmat_nc, admix_cov, drift_err):
     G_nc = []
     Ap = []
     G_nde = []
+    V = []
     totvar = []
     for i in range(1, k + 1):
         totvar.append(np.sum(covmat_nc[:i, :i]))
@@ -251,7 +252,11 @@ def stats_from_matrices(covmat_nc, admix_cov, drift_err):
                 include_diag=False, abs=False
             ) / totvar[-1]
         )
-    return (totvar, G_nc, G, Ap, G_nde)
+        V.append(
+            np.diag((covmat_nc - admix_cov - drift_err)[:i, :i]).sum()
+            / totvar[-1]
+        )
+    return (totvar, G_nc, G, Ap, G_nde, V)
 
 
 def get_ci(stat: np.ndarray, alpha=0.05, axis=0):
