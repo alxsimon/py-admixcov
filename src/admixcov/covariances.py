@@ -2,6 +2,7 @@
 # and error terms
 
 import numpy as np
+import scipy
 
 # Starting point of the functions here:
 # - af array of allele frequencies of shape (T, N_loci)
@@ -260,11 +261,11 @@ def stats_from_matrices(covmat_nc, admix_cov, drift_err):
 
 
 def get_ci(stat: np.ndarray, alpha=0.05, axis=0):
-    qlower, qupper = (
-        np.quantile(stat, alpha/2, axis=axis),
-        np.quantile(stat, 1-alpha/2, axis=axis)
-    )
+    sd = np.std(stat, ddof=1)
+    z = scipy.stats.norm.ppf(1-(alpha/2))
     estimate = np.mean(stat, axis=axis)
+    dev = z * sd / np.sqrt(stat.size)
+    qlower, qupper = (estimate - dev, estimate + dev)
     return (qlower, estimate, qupper)
 
 # ==============
