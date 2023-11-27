@@ -154,6 +154,7 @@ def plot_covmat_ci(
         ax,
         scale_max: float=None,
         delta_labels: list[str]=None,
+        draw_signif=False,
         **kwargs
     ):
     N_delta = CI[1].shape[0]
@@ -175,10 +176,11 @@ def plot_covmat_ci(
         ax=ax,
         **kwargs,
     )
-    sig = (CI[0] * CI[2]) > 0
-    for z in range(sig.shape[0]):
-        for j in range(sig.shape[0]):
-            if (sig[j, z]) & (z != j):
-                _ = ax.text(
-                    j + 0.5, z + 0.5, "*", ha="center", va="center"
-                )
+    if draw_signif:
+        sig = (CI[0] * CI[2]) > 0
+        for z in range(sig.shape[0]):
+            for j in range(sig.shape[0]):
+                if (sig[j, z]) & (z != j):
+                    _ = ax.text(
+                        j + 0.5, z + 0.5, "*", ha="center", va="center"
+                    )
